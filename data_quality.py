@@ -128,32 +128,36 @@ cursor = cnx.cursor()
 
 # Define the list of reserved words
 reserved_words = ['SELECT', 'FROM', 'WHERE', 'AND', 'OR', 'ORDER', 'BY']
-column_patterns = ['"', "'", '{', '}']
+column_patterns = ['\\n', "N/A", '{', '}', '"',"'"]
 space_ = [' ']
 
 
 # Define the table name
+db_name = 'csv_db4'
 table_name = 'choi_test2'
 
 print()
 print("---------------------------------------------")
 print("reserved word exist: ")
 
-for reserved_word in reserved_words:
-    # Execute a query to get all column names from the table
-    # OR 을 찾는 경우 theory, SELECT를 찾는 경우 SELECTION 같은 단어도 검출 되기 때문에, 데이터 잔존률을 유지하기 위해 SELECT, OR 같이 예약어와 정확히 일치하는 경우만 검출
-    # 정확히 일치하는 단어는 하나밖에 없기 때문에 여러 개가 존재할 수 없음
-    query = f"SELECT column_name FROM information_schema.columns WHERE table_name = '{table_name}' AND LOWER(column_name) = '{reserved_word}'"
-    cursor.execute(query)
-    column_names = cursor.fetchall()
-    print(column_names)
+# for reserved_word in reserved_words:
+#     # Execute a query to get all column names from the table
+#     # OR 을 찾는 경우 theory, SELECT를 찾는 경우 SELECTION 같은 단어도 검출 되기 때문에, 데이터 잔존률을 유지하기 위해 SELECT, OR 같이 예약어와 정확히 일치하는 경우만 검출
+#     # 정확히 일치하는 단어는 하나밖에 없기 때문에 여러 개가 존재할 수 없음
+#     query = f"SELECT column_name FROM information_schema.columns WHERE table_name = '{table_name}' AND LOWER(column_name) = '{reserved_word}'"
+#     cursor.execute(query)
+#     column_names = cursor.fetchall()
+#     print(column_names)
 
 print()
 print("---------------------------------------------")
 print("special character exist: ")
 for column_pattern in column_patterns:
     # Execute a query to get all column names from the table
-    query = f"SELECT column_name FROM information_schema.columns WHERE table_name = '{table_name}' AND LOWER(column_name) LIKE '%\{column_pattern}%'"
+    print(column_pattern)
+    # query = f"SELECT column_name FROM information_schema.columns WHERE table_name = '{table_name}' AND LOWER(column_name) LIKE '%{column_pattern}%'"
+    query = f"SELECT column_name FROM information_schema.columns WHERE table_schema = '{db_name}' AND table_name = '{table_name}' AND LOWER(column_name) LIKE '%\{column_pattern}%'"
+    # \는 ', " 검출을 위해 필요
     cursor.execute(query)
     column_names = cursor.fetchall()
     print(column_names)
