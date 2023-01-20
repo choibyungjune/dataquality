@@ -259,7 +259,7 @@ column_names = cursor.fetchall()
 # col_lst.append(column_names)
 print(column_names)
 exit()
-# small change s
+# small change s s
 # Define the table name
 db_name = 'csv_db4'
 table_name = 'choi_test2'
