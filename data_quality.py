@@ -72,36 +72,164 @@ total_records = cursor.fetchone()[0]
 print(total_records)
 
 
-chunk = 20
-# 분할 처리
-# Iterate through the records in steps of 20
-for i in range(1, total_records+1, chunk):
-    try:
-        query = f"SELECT * FROM example2 WHERE record_number BETWEEN {i} AND {i + chunk - 1}"
-        cursor.execute(query)
-        result = cursor.fetchall()
+# chunk = 20
+# # 분할 처리
+# # Iterate through the records in steps of 20
+# for i in range(1, total_records+1, chunk):
+#     try:
+#         query = f"SELECT * FROM example2 WHERE record_number BETWEEN {i} AND {i + chunk - 1}"
+#         cursor.execute(query)
+#         result = cursor.fetchall()
+#         # running over index
+#         if i + chunk >= total_records:
+#             query = f"SELECT * FROM example2 WHERE record_number BETWEEN {i} AND {total_records}"
+#             cursor.execute(query)
+#             result = cursor.fetchall()
+#             break
+#     except Exception as e:
+#         print()
+#         print("---------------------------------------------")
+#         print("Data_Insert :", e)
+#         print("---------------------------------------------")
+#         print()
+#         # process the result here
+#         break
+# # Commit the changes
+# conn.commit()
 
-        # running over index
-        if i + chunk >= total_records:
-            query = f"SELECT * FROM example2 WHERE record_number BETWEEN {i} AND {total_records}"
+# # Close the cursor and connection
+# cursor.close()
+# conn.close()
+
+
+
+
+
+print('--------------------------------------')
+print('속성값 변경 함수 : ')
+print()
+
+
+def change_word_null(df, patterns):   #  dataframe 안의 값 중 patterns 에 해당하는 단어들을 ''로 바꿔주는 함수
+    # Create the regular expression pattern
+    pattern = '|'.join(patterns)
+    pattern = re.compile(pattern, flags=re.IGNORECASE)
+    # Use the applymap() method to apply the re.sub() function to each element in the DataFrame
+    result = df.applymap(lambda x: re.sub(pattern, '', x) if isinstance(x, str) else x)
+    return result
+
+# db info
+host = "127.0.0.1"
+user = "root"
+password = "0000"
+port = "3306"
+database = "csv_db4"
+table_name = 'choi_test2'
+
+engine = create_engine(f'mysql+pymysql://{user}:{password}@{host}:{port}/{database}', encoding='utf-8')
+chunk = 20
+null_words = ['\\\\n', 'N/A']  # ---> ''으로 변경
+
+def change_value_word(table_name, null_words, engine, chunk):
+    # get total record
+    conn = engine.connect()
+    query = "SELECT COUNT(*) FROM example2"
+    cursor.execute(query)
+    total_records = cursor.fetchone()[0]
+    print(total_records)
+
+    for i in range(1, total_records+1, chunk):
+        try:
+            query = f"SELECT * FROM {table_name} WHERE abst_row_num__ BETWEEN {i} AND {i + chunk - 1}"
             cursor.execute(query)
             result = cursor.fetchall()
+            df = pd.DataFrame(result)
+            df = change_word_null(df, null_words)
+            df.to_sql(index = False, name = 'modified_table5', con = engine, if_exists = 'append', method = 'multi', chunksize = chunk)
+            # print(df)
+
+            # running over index
+            if i + chunk >= total_records:
+                query = f"SELECT * FROM {table_name} WHERE abst_row_num__ BETWEEN {i} AND {total_records}"
+                cursor.execute(query)
+                result = cursor.fetchall()
+                df = pd.DataFrame(result)
+                df = change_word_null(df, null_words)
+                df.to_sql(index = False, name = 'modified_table5', con = engine, if_exists = 'append', method = 'multi', chunksize = chunk)
+                # print(df)
+                break
+        except Exception as e:
+            print()
+            print("---------------------------------------------")
+            print("Data_Insert :", e)
+            print("---------------------------------------------")
+            print()
+            # process the result here
             break
-    except Exception as e:
-        print()
-        print("---------------------------------------------")
-        print("Data_Insert :", e)
-        print("---------------------------------------------")
-        print()
-        # process the result here
-        break
-# Commit the changes
-conn.commit()
+    # Close the cursor and connection
+    cursor.close()
+    conn.close()
 
-# Close the cursor and connection
-cursor.close()
-conn.close()
+change_value_word(table_name, null_words, engine, chunk)
+print('finish!!')
 
+
+# 4. 속성 유형 불러오기
+connection = engine.connect()
+
+# 불러올 테이블명
+table_name = 'modified_table'
+
+query = f"SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_NAME = '{table_name}'"
+col_types = connection.execute(query).fetchall()
+# close the connection
+# connection.close()
+
+clear_col_type = []
+for col_type in col_types:
+    clear_col_type.append(col_type[0])
+
+
+# 5. 범주형 속성이 존재하는지
+categorical_type = ('enum', 'set', 'char', 'varchar', 'text', 'tinytext', 'mediumtext', 'longtext', 'json')
+
+categorical_col_type = []
+for col_type in clear_col_type:
+    if col_type in categorical_type:
+        categorical_col_type.append(True)       #범주형
+    else:  categorical_col_type.append(False)   #수치형
+
+print(categorical_col_type)
+
+# 6. 수치형 속성의 값이 모두 동일하거나 NULL인지 확인
+# Define the table name
+db_name = 'csv_db4'
+table_name = 'choi_test'
+
+# db table column name 가져와서 clear_col_name 이라는 list에 넣는 코드
+query = f"SELECT column_name FROM information_schema.columns WHERE table_schema = '{db_name}' AND table_name = '{table_name}'"
+column_names = connection.execute(query).fetchall()
+clear_col_name = []
+for col in column_names:
+    clear_col_name.append(col[0])
+
+# query = f"SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_NAME = '{table_name}'"
+# col_types = connection.execute(query).fetchall()
+
+
+
+print(clear_col_name)
+# false 인 열들을 조사
+for i, col_type in enumerate(categorical_col_type):
+    # print(i,col_type)
+    if col_type == False:
+        query = f"SELECT COUNT(DISTINCT {clear_col_name[i]}) FROM {table_name}"
+        unique_num = connection.execute(query).fetchone()
+        print(unique_num[0])
+    else: continue
+# close the connection
+connection.close()
+exit()
 
 # 데이터가 고정된 경우 이 코드가 유리하지만 계속 변경되는 데이터에 대해서 처리해야 하기 때문에 위 코드가 적절하다
 # offset = 0
@@ -239,6 +367,8 @@ table_name = 'choi_test2'
 
 # 데이터 속성값에 특수문자가 들어갔는지 확인
 
+
+
 print()
 print("---------------------------------------------")
 print("special character exist: ")
@@ -258,7 +388,12 @@ cursor.execute(query)
 column_names = cursor.fetchall()
 # col_lst.append(column_names)
 print(column_names)
+
+
+
 exit()
+
+
 # small change s s s s
 # Define the table name
 db_name = 'csv_db4'
