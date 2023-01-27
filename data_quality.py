@@ -229,6 +229,71 @@ for i, col_type in enumerate(categorical_col_type):
     else: continue
 # close the connection
 connection.close()
+
+import mysql.connector
+
+# Connect to the MariaDB server
+cnx = mysql.connector.connect(
+    host='hostname',
+    user='username',
+    password='password',
+    database='dbname'
+)
+
+# Create a cursor object to execute queries
+cursor = cnx.cursor()
+
+# Prepare the query to update values in the table
+table_name = "mytable"
+column_name = "mycolumn"
+new_value = "new_value"
+old_value = "old_value"
+query = f"UPDATE {table_name} SET {column_name} = %s WHERE {column_name} = %s"
+
+# Execute the query
+cursor.execute(query, (new_value, old_value))
+
+# Commit the changes
+cnx.commit()
+
+# Close the cursor and connection
+cursor.close()
+cnx.close()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 exit()
 
 # 데이터가 고정된 경우 이 코드가 유리하지만 계속 변경되는 데이터에 대해서 처리해야 하기 때문에 위 코드가 적절하다

@@ -9,12 +9,12 @@ from multiprocessing import freeze_support
 import dask.dataframe as dd
 
 # The DataFrame of strings
-df = pd.DataFrame([[1, "'2", 'select',1,2,3,4,5,6,7], [4, None, '\n as',1,2,3,4,5,6,7], [7, ' ', 9,1,2,3,4,5,6,7], [None, None, None,1,2,3,4,5,6,7]], columns=[' ex','{','2test','3test','select','test','test','name','name','name'])
+df = pd.DataFrame([[1, "'2", 'select',1,2,3,4,None,6,7], [4, None, '\n as',1,2,3,4,5,6,7], [7, ' ', 9,1,2,3,4,None,6,7], [None, None, None,1,2,3,4,None,6,7]], columns=['「ex','{','2test','3test','abst_row_num__','test','test','name','name','name'])
 
 # The patterns we want to find 특수문자나 예약어 등록해놓으면
-column_patterns = ['"', "'", '{', '}', ' ']
-value_patterns = ['"', "'", '{', '}']
-reserved_words = ['select', 'from', 'where']
+column_patterns = ['"', "'", '{', '}', ' ','「']
+value_patterns = ['"', "'", '{', '}', ' ']
+reserved_words = ['select', 'from', 'where','abst_row_num__','rec_disim','rec_numerical','rec_categorical','ratio:']
 null_words = ['\n']
 
 def check_word(df, patterns):       # patterns가 속성값에 있으면 True, 없으면 False 반환하는 함수
@@ -97,21 +97,25 @@ def add_record(df):
     df.insert(0, 'record_number', range(1, len(df) + 1), True)
     return df
 
+print("---------------------------------")
+print("original dataframe")
+print(df)
+
 df = change_column(df, column_patterns)
-# print("---------------------------------")
-# print("column_change")
-# print(df)
+print("---------------------------------")
+print("column_change")
+print(df)
 
 df = change_column(df, reserved_words)
-# print("---------------------------------")
-# print("column_change : reserved words")
-# print(df)
+print("---------------------------------")
+print("column_change : reserved words")
+print(df)
 
 
 df = change_word(df, value_patterns)
-# print("---------------------------------")
-# print("word_change")
-# print(df)
+print("---------------------------------")
+print("word_change")
+print(df)
 
 df = change_word(df, reserved_words)
 print("---------------------------------")
@@ -128,6 +132,26 @@ print("---------------------------------")
 print("add record column")
 print(df)
 
+
+
+# 5. 속성값이 모두 동일한지 확인
+if df['name'].nunique() == 1:
+    print("There is only one unique value in the column.")
+else:
+    print("There are multiple unique values in the column.")
+
+
+
+# 6. distinct 값의 비율이 80% 이하인지 확인
+distinct_prop = []
+for col_ in df.columns:
+    if df[col_].nunique()/len(df) >= 0.8:
+        distinct_prop.append(True)
+    else :  distinct_prop.append(False)
+print(distinct_prop)
+
+print(df.dtypes)
+#
 
 
 #db에 밀어넣기
